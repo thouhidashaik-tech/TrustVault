@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Admin User Management</h2>
+
+<p>
+    <a href="{{ url_for('admin.dashboard') }}">
+        Back to Admin Dashboard
+    </a>
+</p>
+
+<hr>
+
+<h3>Create Owner Account</h3>
+
+<form method="POST" action="{{ url_for('admin.create_owner') }}">
+
+    <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
+
+    <p>
+        <label>Full Name</label><br>
+        <input
+            type="text"
+            name="full_name"
+            maxlength="120"
+            required
+        >
+    </p>
+
+    <p>
+        <label>Email Address</label><br>
+        <input
+            type="email"
+            name="email"
+            maxlength="150"
+            required
+        >
+    </p>
+
+    <p>
+        <label>Password (12 to 128 characters)</label>
+        <input
+            type="password"
+            name="password"
+            minlength="12"
+            maxlength="128"
+            required
+        >
+    </p>
+
+    <button type="submit">Create Owner Account</button>
+
+</form>
+
+<hr>
+
+<h3>Registered User Accounts</h3>
+
+<table border="1" cellpadding="10">
+
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        {% for user in users %}
+
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.full_name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+
+            <td>
+                {{ "Active" if user.is_active else "Inactive" }}
+            </td>
+
+            <td>
+
+                {% if user.id == current_user.id %}
+
+                    Current Account
+
+                {% else %}
+
+                    <form
+                        method="POST"
+                        action="{{ url_for(
+                            'admin.toggle_user_status',
+                            user_id=user.id
+                        ) }}"
+                    >
+
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                        >
+
+                        {% if user.is_active %}
+
+                            <button type="submit">
+                                Deactivate
+                            </button>
+
+                        {% else %}
+
+                            <button type="submit">
+                                Activate
+                            </button>
+
+                        {% endif %}
+
+                    </form>
+
+                {% endif %}
+
+            </td>
+
+        </tr>
+
+        {% else %}
+
+        <tr>
+            <td colspan="6">No registered users found.</td>
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}

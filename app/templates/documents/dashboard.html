@@ -1,0 +1,316 @@
+
+{% extends "base.html" %}
+
+{% block title %}Owner Dashboard | TrustVault{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-heading">
+    <div>
+        <h1>Document Owner Dashboard</h1>
+        <p>Welcome back, {{ current_user.full_name }}!</p>
+        <p>Manage your documents and control who can access them.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+
+    <div class="dashboard-card">
+        <h3>My Documents</h3>
+        <p> {{ documents|length }} </p>
+        <span>Matching documents</span>
+    </div>
+
+    <div class="dashboard-card">
+        <h3>Secure Storage</h3>
+        <p><span class="feature-icon">🔒</span></p>
+        <span>Your files are stored privately</span>
+    </div>
+
+    <div class="dashboard-card">
+        <h3>Access Control</h3>
+        <p><span class="feature-icon">🛡️</span></p>
+        <span>Manage document permissions</span>
+    </div>
+
+</div>
+
+<section class="content-section">
+
+    <div class="section-heading">
+        <h2>Upload a New Document</h2>
+        <p>Add a document to your private TrustVault storage.</p>
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('documents.upload') }}"
+          enctype="multipart/form-data"
+          class="upload-form">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <div class="form-grid">
+
+            <div>
+                <label>Document Title</label>
+                <input type="text"
+                       name="title"
+                       maxlength="200"
+                       placeholder="Enter document title"
+                       required>
+            </div>
+
+            <div>
+                <label>Category</label>
+                <input type="text"
+                       name="category"
+                       maxlength="100"
+                       placeholder="Example: Personal, Education, Work"
+                       required>
+            </div>
+
+        </div>
+
+        <div class="file-upload-area">
+            <label>Select Document</label>
+            <input type="file"
+                   name="document_file"
+                   accept=".pdf,.png,.jpg,.jpeg,.txt"
+                   required>
+
+            <p>Supported formats: PDF, PNG, JPG, JPEG and TXT. Maximum size: 16 MB.</p>
+        </div>
+
+        <button type="submit">
+            Upload Document
+        </button>
+
+    </form>
+
+</section>
+
+<section class="content-section">
+
+    <div class="section-heading">
+        <h2>Search My Documents</h2>
+        <p>Find your documents using the available filters.</p>
+    </div>
+
+    <form method="GET"
+          action="{{ url_for('documents.dashboard') }}"
+          class="search-box">
+
+        <div class="form-grid">
+
+            <div>
+                <label>Document Name</label>
+                <input type="text"
+                       name="search_name"
+                       placeholder="Search by document name"
+                       value="{{ request.args.get('search_name', '') }}">
+            </div>
+
+            <div>
+                <label>Category</label>
+                <input type="text"
+                       name="search_category"
+                       placeholder="Search by category"
+                       value="{{ request.args.get('search_category', '') }}">
+            </div>
+
+            <div>
+                <label>Upload Date</label>
+                <input type="date"
+                       name="search_date"
+                       value="{{ request.args.get('search_date', '') }}">
+            </div>
+
+        </div>
+
+        <div class="action-links">
+            <button type="submit">Search Documents</button>
+            <a href="{{ url_for('documents.dashboard') }}">Clear Search</a>
+        </div>
+
+    </form>
+
+</section>
+
+<section class="content-section">
+
+    <div class="section-heading">
+        <h2>My Documents</h2>
+        <p>{{ documents|length }} matching document(s)</p>
+    </div>
+
+    {% for document in documents %}
+
+    <div class="document-card">
+
+        <div class="document-header">
+
+            <div>
+                <h3>{{ document.title }}</h3>
+                <span class="document-category">
+                    {{ document.category }}
+                </span>
+            </div>
+
+            <span class="document-type">Private Document</span>
+
+        </div>
+
+        <div class="document-details">
+
+            <p>
+                <strong>Original Filename:</strong>
+                {{ document.original_filename }}
+            </p>
+
+            <p>
+                <strong>Uploaded:</strong>
+                {{ document.created_at.strftime('%d-%m-%Y') }}
+            </p>
+
+            <p>
+                <strong>File Size:</strong>
+                {{ "%.2f"|format(document.file_size / 1024) }} KB
+            </p>
+
+        </div>
+
+        <div class="document-actions">
+
+            <a class="btn"
+               href="{{ url_for('documents.download', document_id=document.id) }}">
+                Download
+            </a>
+
+            <a class="btn btn-secondary"
+               href="{{ url_for('documents.edit_document', document_id=document.id) }}">
+                Edit Details
+            </a>
+
+            <form method="POST"
+                  action="{{ url_for('documents.delete_document', document_id=document.id) }}"
+                  class="inline-form"
+                  onsubmit="return confirm('Are you sure you want to delete this document?');">
+
+                <input type="hidden"
+                       name="csrf_token"
+                       value="{{ csrf_token() }}">
+
+                <button type="submit" class="btn-danger">
+                    Delete
+                </button>
+
+            </form>
+
+        </div>
+
+        <div class="sharing-section">
+
+            <h3>Share This Document</h3>
+            <p>Give another registered user permission to access this document.</p>
+
+            <form method="POST"
+                  action="{{ url_for('documents.share_document', document_id=document.id) }}">
+
+                <input type="hidden"
+                       name="csrf_token"
+                       value="{{ csrf_token() }}">
+
+                <div class="form-grid">
+
+                    <div>
+                        <label>User Email</label>
+                        <input type="email"
+                               name="email"
+                               placeholder="Enter registered user's email"
+                               required>
+                    </div>
+
+                    <div>
+                        <label>Permission Level</label>
+                        <select name="permission" required>
+                            <option value="read">Read Only</option>
+                            <option value="edit">Edit Permission</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <button type="submit">Share Document</button>
+
+            </form>
+
+            <div class="access-list">
+
+                <h3>Users With Access</h3>
+
+                {% set active_permissions = document.permissions|selectattr('is_active')|list %}
+
+                {% if active_permissions %}
+
+                    {% for permission in active_permissions %}
+
+                    <div class="permission-item">
+
+                        <div>
+                            <strong>{{ permission.user.full_name }}</strong>
+                            <p>{{ permission.user.email }}</p>
+                            <span class="permission-label">
+                                {{ permission.permission|title }} Access
+                            </span>
+                        </div>
+
+                        <form method="POST"
+                              action="{{ url_for(
+                                  'documents.revoke_permission',
+                                  document_id=document.id,
+                                  user_id=permission.user_id
+                              ) }}"
+                              class="inline-form">
+
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   value="{{ csrf_token() }}">
+
+                            <button type="submit" class="btn-danger">
+                                Revoke Access
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <p class="empty-message">
+                        No users have been given access yet.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+        <h3>No Documents Yet</h3>
+        <p>You haven't uploaded any documents. Upload your first document above.</p>
+    </div>
+
+    {% endfor %}
+
+</section>
+
+{% endblock %}

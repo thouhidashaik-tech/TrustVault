@@ -1,0 +1,69 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Administrator Dashboard</h2>
+
+<p>
+    <a href="{{ url_for('admin.activity') }}">
+        View Document Activity
+    </a>
+</p>
+
+<p>
+    <a href="{{ url_for('admin.documents') }}">
+        Manage and Search Documents
+    </a>
+</p>
+
+<p>
+    <a href="{{ url_for('admin.users') }}">
+        Manage User Accounts
+    </a>
+</p>
+
+<p>Welcome to the TrustVault administration panel.</p>
+<section>
+    <h3>System Overview</h3>
+
+    <p>Total Users: {{ user_count }}</p>
+    <p>Total Documents: {{ document_count }}</p>
+    <p>Total Audit Events: {{ audit_count }}</p>
+</section>
+
+<hr>
+
+<h3>Registered Users</h3>
+
+<table border="1" cellpadding="10">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.full_name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+            <td>
+                {{ "Active" if user.is_active else "Inactive" }}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5">No users registered.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

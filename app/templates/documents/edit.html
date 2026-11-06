@@ -1,0 +1,41 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Edit Document Details</h2>
+
+<form method="POST">
+
+    <input type="hidden"
+           name="csrf_token"
+           value="{{ csrf_token() }}">
+
+    <label>Document Title</label>
+    <input type="text"
+           name="title"
+           value="{{ document.title }}"
+           maxlength="200"
+           required>
+
+    <br><br>
+
+    <label>Category</label>
+    <input type="text"
+           name="category"
+           value="{{ document.category }}"
+           maxlength="100"
+           required>
+
+    <br><br>
+
+    <label>Description</label>
+    <textarea name="description">{{ document.description or '' }}</textarea>
+
+    <br><br>
+
+    <button type="submit">Save Changes</button>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,142 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Document Management</h2>
+
+<p>
+    <a href="{{ url_for('admin.dashboard') }}">
+        Back to Admin Dashboard
+    </a>
+</p>
+
+<hr>
+
+<h3>Search Documents</h3>
+
+<form method="GET" action="{{ url_for('admin.documents') }}">
+
+    <p>
+        <label>Document Name:</label><br>
+        <input
+            type="text"
+            name="search_name"
+            value="{{ search_name }}"
+            placeholder="Enter document name"
+        >
+    </p>
+
+    <p>
+        <label>Owner Name:</label><br>
+        <input
+            type="text"
+            name="search_owner"
+            value="{{ search_owner }}"
+            placeholder="Enter owner name"
+        >
+    </p>
+
+    <p>
+        <label>Category:</label><br>
+        <input
+            type="text"
+            name="search_category"
+            value="{{ search_category }}"
+            placeholder="Enter category"
+        >
+    </p>
+
+    <p>
+        <label>Upload Date:</label><br>
+        <input
+            type="date"
+            name="search_date"
+            value="{{ search_date }}"
+        >
+    </p>
+
+    <button type="submit">Search</button>
+
+    <a href="{{ url_for('admin.documents') }}">
+        Clear Search
+    </a>
+
+</form>
+
+<hr>
+
+<h3>Document Records</h3>
+
+<table border="1" cellpadding="10">
+
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Document Name</th>
+            <th>Owner</th>
+            <th>Category</th>
+            <th>Original Filename</th>
+            <th>Upload Date</th>
+<th>Status</th>
+<th>Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        {% for document, owner_name in documents %}
+
+        <tr>
+            <td>{{ document.id }}</td>
+            <td>{{ document.title }}</td>
+            <td>{{ owner_name }}</td>
+            <td>{{ document.category }}</td>
+            <td>{{ document.original_filename }}</td>
+            <td>{{ document.created_at }}</td>
+
+            <td>
+    {% if document.deleted_at %}
+        Deleted
+    {% else %}
+        Active
+    {% endif %}
+</td>
+<td>
+    {% if not document.deleted_at %}
+        <form
+            method="POST"
+            action="{{ url_for(
+                'admin.admin_delete_document',
+                document_id=document.id
+            ) }}"
+            onsubmit="return confirm('Are you sure you want to delete this document?');"
+        >
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+            <button type="submit">Delete</button>
+        </form>
+    {% else %}
+        Not available
+    {% endif %}
+</td>
+        </tr>
+
+        {% else %}
+
+        <tr>
+            <td colspan="8">
+                No documents found.
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}

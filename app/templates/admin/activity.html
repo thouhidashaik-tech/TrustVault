@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Admin Activity Dashboard</h2>
+
+<p>Recent document activity and security events.</p>
+
+<table border="1" cellpadding="10">
+    <thead>
+        <tr>
+            <th>Actor</th>
+            <th>Document</th>
+            <th>Action</th>
+            <th>Outcome</th>
+            <th>Details</th>
+            <th>Date and Time</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for event, actor_name, document_title in activities %}
+        <tr>
+            <td>{{ actor_name or "Unknown / Unauthenticated" }}</td>
+            <td>{{ document_title or event.attempted_document_id or "N/A" }}</td>
+            <td>{{ event.action }}</td>
+            <td>{{ event.outcome }}</td>
+            <td>{{ event.details or "No details" }}</td>
+            <td>{{ event.timestamp.strftime('%d-%m-%Y %H:%M:%S') }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">No activity records found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<br>
+
+<a href="{{ url_for('admin.dashboard') }}">Back to Admin Dashboard</a>
+
+{% endblock %}

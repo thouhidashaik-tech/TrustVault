@@ -1,0 +1,74 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Viewer Dashboard</h2>
+
+<p>Welcome, {{ current_user.full_name }}!</p>
+
+<hr>
+
+<h3>Documents Shared With Me</h3>
+
+<table border="1" cellpadding="10">
+
+    <thead>
+        <tr>
+            <th>Document Name</th>
+            <th>Category</th>
+            <th>Owner</th>
+            <th>Uploaded Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        {% for document in documents %}
+
+        <tr>
+            <td>{{ document.title }}</td>
+
+            <td>{{ document.category }}</td>
+
+            <td>{{ document.owner.full_name }}</td>
+
+            <td>
+                {{ document.created_at.strftime('%d-%m-%Y') }}
+            </td>
+
+           <td>
+    <a href="{{ url_for(
+        'documents.download',
+        document_id=document.id
+    ) }}">
+        Download
+    </a>
+
+    <br><br>
+
+    <a href="{{ url_for(
+        'documents.edit_document',
+        document_id=document.id
+    ) }}">
+        Edit Details
+    </a>
+</td>
+        </tr>
+
+        {% else %}
+
+        <tr>
+            <td colspan="5">
+                No documents have been shared with you.
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}
