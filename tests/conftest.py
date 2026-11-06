@@ -132,3 +132,17 @@ def login_as(client):
             session["_fresh"] = True
 
     return login
+
+@pytest.fixture
+def admin(app):
+    with app.app_context():
+        user = User(
+            full_name="Test Admin",
+            email="admin@test.com",
+            role="admin",
+            is_active=True
+        )
+        user.set_password("AdminPassword123!")
+        db.session.add(user)
+        db.session.commit()
+        return user.id

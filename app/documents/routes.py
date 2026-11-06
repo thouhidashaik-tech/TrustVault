@@ -109,33 +109,57 @@ def dashboard():
     )
 
 
+
 @documents_bp.route("/upload", methods=["POST"])
 @roles_required("owner")
 def upload():
+    def reject_upload(message, details):
+        add_audit_event(
+            action="upload",
+            outcome="denied",
+            details=details
+        )
+        db.session.commit()
+        flash(message, "error")
+        return redirect(url_for("documents.dashboard"))
 
     title = request.form.get("title", "").strip()
     category = request.form.get("category", "").strip()
     uploaded_file = request.files.get("document_file")
 
     if not title or not category or not uploaded_file:
-        flash("Please fill in all fields and select a file.", "error")
-        return redirect(url_for("documents.dashboard"))
+        return reject_upload(
+            "Please fill in all fields and select a file.",
+            "Upload refused: required fields or file were missing."
+        )
+
+    if len(title) > 200 or len(category) > 100:
+        return reject_upload(
+            "Title or category is too long.",
+            "Upload refused: title or category exceeded the allowed length."
+        )
 
     if not uploaded_file.filename:
-        flash("Please select a file.", "error")
-        return redirect(url_for("documents.dashboard"))
+        return reject_upload(
+            "Please select a file.",
+            "Upload refused: no filename was provided."
+        )
 
     safe_filename = secure_filename(uploaded_file.filename)
 
     if not safe_filename or "." not in safe_filename:
-        flash("Invalid filename.", "error")
-        return redirect(url_for("documents.dashboard"))
+        return reject_upload(
+            "Invalid filename.",
+            "Upload refused: invalid filename."
+        )
 
     extension = safe_filename.rsplit(".", 1)[1].lower()
 
     if extension not in ALLOWED_TYPES:
-        flash("File type not allowed.", "error")
-        return redirect(url_for("documents.dashboard"))
+        return reject_upload(
+            "File type not allowed.",
+            "Upload refused: unsupported file extension."
+        )
 
     is_valid, detected_mime = validate_file(
         uploaded_file,
@@ -143,26 +167,30 @@ def upload():
     )
 
     if not is_valid:
-        flash("The file content does not match its file type.", "error")
-        return redirect(url_for("documents.dashboard"))
+        return reject_upload(
+            "The file content does not match its file type.",
+            "Upload refused: file signature or content validation failed."
+        )
 
     uploaded_file.stream.seek(0, os.SEEK_END)
     file_size = uploaded_file.stream.tell()
     uploaded_file.stream.seek(0)
 
     if file_size == 0:
-        flash("Empty files cannot be uploaded.", "error")
-        return redirect(url_for("documents.dashboard"))
+        return reject_upload(
+            "Empty files cannot be uploaded.",
+            "Upload refused: empty file."
+        )
 
     if file_size > current_app.config["MAX_CONTENT_LENGTH"]:
-        flash("File is too large. Maximum size is 16 MB.", "error")
-        return redirect(url_for("documents.dashboard"))
+        return reject_upload(
+            "File is too large. Maximum size is 16 MB.",
+            "Upload refused: file exceeded the configured size limit."
+        )
 
     storage_key = str(uuid.uuid4())
-
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     os.makedirs(upload_folder, exist_ok=True)
-
     file_path = os.path.join(upload_folder, storage_key)
 
     document = Document(
@@ -296,19 +324,61 @@ def share_document(document_id):
         abort(404)
 
     email = request.form.get("email", "").strip().lower()
-    permission_type = request.form.get("permission", "").strip().lower()
+    permission_type = request.form.get(
+        "permission", ""
+    ).strip().lower()
 
     if not email or permission_type not in ("read", "edit"):
-        flash("Please provide a valid email and permission.", "error")
+        add_audit_event(
+            action="permission_grant",
+            outcome="denied",
+            details=(
+                "Permission grant refused: missing email "
+                "or invalid permission type."
+            ),
+            document_id=document.id,
+            attempted_document_id=document_id
+        )
+        db.session.commit()
+
+        flash(
+            "Please provide a valid email and permission.",
+            "error"
+        )
         return redirect(url_for("documents.dashboard"))
 
     target_user = User.query.filter_by(email=email).first()
 
     if target_user is None:
-        flash("No registered user found with that email.", "error")
+        add_audit_event(
+            action="permission_grant",
+            outcome="denied",
+            details=(
+                "Permission grant refused: recipient "
+                "is not a registered user."
+            ),
+            document_id=document.id,
+            attempted_document_id=document_id
+        )
+        db.session.commit()
+
+        flash(
+            "No registered user found with that email.",
+            "error"
+        )
         return redirect(url_for("documents.dashboard"))
 
     if target_user.id == current_user.id:
+        add_audit_event(
+            action="permission_grant",
+            outcome="denied",
+            details="Owner attempted to share a document with themselves.",
+            document_id=document.id,
+            target_user_id=target_user.id,
+            attempted_document_id=document_id
+        )
+        db.session.commit()
+
         flash("You already own this document.", "error")
         return redirect(url_for("documents.dashboard"))
 
@@ -389,6 +459,18 @@ def revoke_permission(document_id, user_id):
     ).first()
 
     if permission is None:
+        add_audit_event(
+            action="permission_revoke",
+            outcome="denied",
+            details=(
+                "Permission revocation refused: "
+                "no active permission exists."
+            ),
+            document_id=document.id,
+            attempted_document_id=document_id,
+            target_user_id=user_id
+        )
+        db.session.commit()
         flash("No active permission found for this user.", "error")
         return redirect(url_for("documents.dashboard"))
 
@@ -491,8 +573,19 @@ def edit_document(document_id):
         title = request.form.get("title", "").strip()
         category = request.form.get("category", "").strip()
         description = request.form.get("description", "").strip()
-
         if not title or not category:
+            add_audit_event(
+                action="edit",
+                outcome="denied",
+                details=(
+                    "Document edit refused: title or category "
+                    "was missing."
+                ),
+                document_id=document.id,
+                attempted_document_id=document_id
+            )
+            db.session.commit()
+
             flash("Title and category are required.", "error")
             return redirect(
                 url_for(
@@ -500,8 +593,19 @@ def edit_document(document_id):
                     document_id=document.id
                 )
             )
-
         if len(title) > 200 or len(category) > 100:
+            add_audit_event(
+                action="edit",
+                outcome="denied",
+                details=(
+                    "Document edit refused: title or category "
+                    "exceeded the allowed length."
+                ),
+                document_id=document.id,
+                attempted_document_id=document_id
+            )
+            db.session.commit()
+
             flash("Title or category is too long.", "error")
             return redirect(
                 url_for(

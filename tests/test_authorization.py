@@ -763,3 +763,93 @@ def test_owner_cannot_share_another_owners_document(
         ).first()
 
         assert event is not None
+
+def test_admin_cannot_deactivate_own_account(
+    app, client, admin, login_as
+):
+    login_as(admin)
+
+    response = client.post(
+        f"/admin/users/{admin}/toggle-status"
+    )
+
+    assert response.status_code == 302
+
+    with app.app_context():
+        user = db.session.get(User, admin)
+        assert user.is_active is True
+
+
+
+def test_admin_can_deactivate_another_admin(
+    app, client, admin, login_as
+):
+    with app.app_context():
+        another_admin = User(
+            full_name="Second Admin",
+            email="secondadmin@test.com",
+            role="admin",
+            is_active=True
+        )
+        another_admin.set_password("SecondAdmin123!")
+        db.session.add(another_admin)
+        db.session.commit()
+        another_admin_id = another_admin.id
+
+    login_as(admin)
+
+    response = client.post(
+        f"/admin/users/{another_admin_id}/toggle-status"
+    )
+
+    assert response.status_code == 302
+
+    with app.app_context():
+        user = db.session.get(User, another_admin_id)
+        assert user.is_active is False
+
+        event = AuditEvent.query.filter_by(
+            action="user_deactivated",
+            outcome="success",
+            target_user_id=another_admin_id
+        ).first()
+
+        assert event is not None
+
+def test_admin_can_create_owner_account(
+    app, client, admin, login_as
+):
+    login_as(admin)
+
+    response = client.post(
+        "/admin/users/create",
+        data={
+            "full_name": "New Owner",
+            "email": "newowner@test.com",
+            "password": "NewOwnerPassword123!"
+        }
+    )
+
+    assert response.status_code == 302
+
+    with app.app_context():
+        user = User.query.filter_by(
+            email="newowner@test.com"
+        ).first()
+
+        assert user is not None
+        assert user.role == "owner"
+        assert user.is_active is True
+        assert user.password_hash != "NewOwnerPassword123!"
+
+
+def test_admin_cannot_delete_nonexistent_document(
+    client, admin, login_as
+):
+    login_as(admin)
+
+    response = client.post(
+        "/admin/documents/999999/delete"
+    )
+
+    assert response.status_code == 404
