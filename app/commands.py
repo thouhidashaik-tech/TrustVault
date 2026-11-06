@@ -1,11 +1,11 @@
 
 import click
-
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
-from app.models import User
+from app.models import User, AuditEvent
+from app.audit import add_audit_event
 
 
 def register_commands(app):
@@ -61,10 +61,54 @@ def register_commands(app):
         try:
             db.session.add(user)
             db.session.commit()
+
             click.echo(
                 f"\nSuccess! {role} account created for {email}."
             )
 
         except IntegrityError:
             db.session.rollback()
-            click.echo("Error: Could not create account. Check the email.")
+            click.echo(
+                "Error: Could not create account. Check the email."
+            )
+
+    @app.cli.command("init-audit-chain")
+    def init_audit_chain():
+        """Create the initial signed audit-chain event once."""
+
+        existing_genesis = db.session.execute(
+            select(AuditEvent).where(
+                AuditEvent.action == "audit_chain_genesis"
+            )
+        ).scalar_one_or_none()
+
+        if existing_genesis:
+            click.echo(
+                "Audit chain has already been initialized. "
+                "No changes were made."
+            )
+            return
+
+        try:
+            add_audit_event(
+                action="audit_chain_genesis",
+                outcome="success",
+                details=(
+                    "TrustVault audit-chain verification baseline "
+                    "initialized."
+                ),
+                start_new_chain=True
+            )
+
+            db.session.commit()
+
+            click.echo(
+                "Success! The audit-chain genesis event was created."
+            )
+
+        except Exception:
+            db.session.rollback()
+            raise click.ClickException(
+                "Audit-chain initialization failed. "
+                "Check your AUDIT_HMAC_KEY configuration and database."
+            )
