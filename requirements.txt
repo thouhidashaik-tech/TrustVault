@@ -7,3 +7,4 @@ PyMySQL
 python-dotenv
 email-validator
 pytest
+gunicorn
