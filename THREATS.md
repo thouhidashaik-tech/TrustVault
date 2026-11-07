@@ -1,7 +1,7 @@
 # TrustVault — Threat Model
 
-**Project:** TrustVault  
-**Last updated:** November 7, 2026  
+**Project:** TrustVault
+**Last updated:** November 7, 2026
 **Status:** Implemented protections are covered by application code and automated tests. Production security still requires deployment verification.
 
 ## 1. Broken Object-Level Authorization

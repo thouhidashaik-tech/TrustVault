@@ -1,6 +1,6 @@
 # TrustVault — AI Usage Journal
 
-**Project:** TrustVault  
+**Project:** TrustVault
 **Developer:** Thouhida Shaik
 
 AI tools were used as development assistants for understanding requirements, learning Flask concepts, debugging, reviewing code and preparing tests. I reviewed the suggestions, applied changes to my project and verified the behaviour through testing.
