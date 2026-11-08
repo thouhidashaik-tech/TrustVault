@@ -14,6 +14,16 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    DB_SSL_CA = os.environ.get("DB_SSL_CA")
+
+    if DB_SSL_CA:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "connect_args": {
+                "ssl_ca": DB_SSL_CA,
+                "ssl_verify_cert": True,
+                "ssl_verify_identity": True,
+            }
+        }
 
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 
