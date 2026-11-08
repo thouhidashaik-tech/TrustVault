@@ -18,13 +18,18 @@ class Config:
 
     if DB_SSL_CA:
         SQLALCHEMY_ENGINE_OPTIONS = {
-            "connect_args": {
-                "ssl_ca": DB_SSL_CA,
-                "ssl_verify_cert": True,
-                "ssl_verify_identity": True,
-            }
-        }
-
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+    "pool_timeout": 30,
+    "connect_args": {
+        "ssl_ca": DB_SSL_CA,
+        "ssl_verify_cert": True,
+        "ssl_verify_identity": True,
+        "connect_timeout": 15,
+        "read_timeout": 30,
+        "write_timeout": 30,
+    },
+}
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 
     UPLOAD_FOLDER = str(
