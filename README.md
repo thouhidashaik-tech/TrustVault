@@ -46,3 +46,9 @@ access control and document-level permissions.
 ```powershell
 git clone YOUR_PUBLIC_GITHUB_REPOSITORY_URL
 cd TrustVault
+
+
+## Live Demo
+
+- **Live Application:** https://trustvault-95p2.onrender.com
+- **Demo Video:** https://drive.google.com/file/d/1afWSTyh_v9HLd1yauAK-VFAEpLNniByB/view?usp=drivesdk
